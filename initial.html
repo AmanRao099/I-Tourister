@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourist Location Finder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('data/bg.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            justify-content: space-between;
+        }
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+        header {
+            background-color: rgba(31, 31, 31, 0.8);
+            color: #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+        header .logo {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        header nav {
+            display: flex;
+            gap: 1.5rem;
+        }
+        header nav a {
+            text-decoration: none;
+            color: #e0e0e0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        header nav a:hover {
+            color: #f39c12;
+        }
+        header nav a.active {
+            color: #f39c12;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-grow: 1;
+            max-width: 960px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Hoverable Container Style */
+        .hover-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+        .hover-container:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .section {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            color: inherit;
+            margin: 1rem 0;
+        }
+        .section .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #f39c12;
+        }
+        .section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            color: #fff;
+        }
+        .content input {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            border: none;
+            background-color: #333;
+            color: #e0e0e0;
+        }
+        .content button {
+            padding: 12px 24px;
+            background-color: #f39c12;
+            border-radius: 8px;
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .content button:hover {
+            background-color: #e67e22;
+        }
+        #map-container {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: rgba(31, 31, 31, 0.8);
+            color: #777;
+            border-top: 1px solid #444;
+            margin-top: auto;
+        }
+        footer p {
+            font-size: 1rem;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            position: relative;
+            width: fit-content;
+            cursor: pointer;
+        }
+
+        .filter-section .filter-icon {
+            font-size: 2rem;
+            color: #f39c12;
+            transition: transform 0.3s ease;
+        }
+
+        .filter-section select {
+            display: none;
+            position: absolute;
+            top: 30px;
+            right: 0;
+            background-color: #444;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            z-index: 1;
+        }
+
+        .filter-section.active select {
+            display: block;
+        }
+
+        /* Show the icon when dropdown is active */
+        .filter-section.active .filter-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: center;
+                padding: 1rem;
+            }
+            header nav {
+                flex-direction: column;
+                margin-top: 1rem;
+                gap: 1rem;
+            }
+            .section {
+                width: 100%;
+                max-width: 350px;
+            }
+            .section .icon {
+                font-size: 2.5rem;
+            }
+            .section h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">I TOURISTER</div>
+    <nav>
+        <a href="index.html" class="active">Traffic</a>
+        <a href="touristspot.html">Mapper</a>
+        <a href="water.html">Water</a>
+        <a href="waste.html">Waste</a>
+    </nav>
+</header>
+
+<div class="container">
+    <!-- Hoverable container for entire content -->
+    <div class="hover-container">
+        <!-- Location Input Section -->
+        <div class="section" id="location-section">
+            <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+            <h2>Enter Your Location</h2>
+            <div class="content">
+                <input type="text" id="location-input" placeholder="Enter Location..." autocomplete="off" />
+            </div>
+        </div>
+
+        <!-- Filter Section as an icon with dropdown -->
+        <div class="filter-section" onclick="toggleDropdown()">
+            <i class="fas fa-filter filter-icon"></i>
+            <select id="place-type">
+                <option value="tourist_attraction">Popular Locations</option>
+                <option value="restaurant">Restaurants</option>
+                <option value="hotel">Hotels</option>
+            </select>
+        </div>
+
+        <!-- Recommendation Button -->
+        <div class="content">
+            <button onclick="getRecommendations()">Get Recommendations</button>
+        </div>
+    </div>
+
+    <!-- Map and Tourist Spot Recommendations Section -->
+    <div class="section" id="map-section" style="display:none;">
+        <div class="icon"><i class="fas fa-map"></i></div>
+        <h2>Recommended Places</h2>
+        <div class="content" id="map-container"></div>
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2024 ITS Solutions. All rights reserved.</p>
+</footer>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPxIhLNus4Jkc9tJFkSA2HH1BKCFdiI5g&libraries=places&callback=initMap" async defer></script>
+<script>
+// Initialize map
+let map, service, infowindow, autocomplete;
+
+function initMap() {
+    map = new google.maps.Map(document.getElementById("map-container"), {
+        center: { lat: 37.7749, lng: -122.4194 }, // Default location (San Francisco)
+        zoom: 13,
+    });
+
+    service = new google.maps.places.PlacesService(map);
+    infowindow = new google.maps.InfoWindow();
+
+    const input = document.getElementById("location-input");
+    autocomplete = new google.maps.places.Autocomplete(input);
+}
+
+// Function to get recommendations based on entered location and selected filter
+function getRecommendations() {
+    const locationInput = document.getElementById('location-input').value;
+    const placeType = document.getElementById('place-type').value;
+
+    if (!locationInput) {
+        alert('Please enter a location.');
+        return;
+    }
+
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: locationInput }, (results, status) => {
+        if (status === 'OK') {
+            const location = results[0].geometry.location;
+            map.setCenter(location);
+
+            const request = {
+                location: location,
+                radius: 5000,  // 5 km radius
+                type: [placeType],
+            };
+
+            service.nearbySearch(request, (places, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    const mapSection = document.getElementById('map-section');
+                    mapSection.style.display = 'block';
+
+                    places.forEach((place) => {
+                        const marker = new google.maps.Marker({
+                            map: map,
+                            position: place.geometry.location,
+                        });
+
+                        google.maps.event.addListener(marker, 'click', () => {
+                            infowindow.setContent('<div><strong>' + place.name + '</strong><br>' + place.vicinity + '</div>');
+                            infowindow.open(map, marker);
+                        });
+                    });
+                } else {
+                    alert('No places found for the selected filter.');
+                }
+            });
+        } else {
+            alert('Geocode was unsuccessful for the following reason: ' + status);
+        }
+    });
+}
+
+// Toggle dropdown menu visibility when filter icon is clicked
+function toggleDropdown() {
+    const filterSection = document.querySelector('.filter-section');
+    filterSection.classList.toggle('active');
+}
+</script>
+
+</body>
+</html>

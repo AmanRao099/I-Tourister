@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommended Tourist Spots</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Style based on index.html */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('data/bg.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+        header, .footer {
+            background-color: rgba(31, 31, 31, 0.8);
+            color: #e0e0e0;
+            padding: 1rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid #444;
+        }
+        header h1, .footer p {
+            margin: 0;
+            font-weight: 400;
+        }
+        .container {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .spots-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            width: 100%;
+        }
+        .spot-item {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 200px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transition: box-shadow 0.3s, transform 0.3s;
+        }
+        .spot-item:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            transform: translateY(-5px);
+        }
+        .spot-item h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .spot-item .icon {
+            font-size: 2.5rem;
+            color: #f39c12;
+        }
+        .footer {
+            padding: 1rem;
+            background-color: rgba(31, 31, 31, 0.8);
+            color: #777;
+            border-top: 1px solid #444;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Tourist Spots in <span id="destinationName">Your Destination</span></h1>
+</header>
+
+<div class="container">
+    <div id="map"></div>
+    <div class="spots-list" id="places"></div>
+</div>
+
+<footer class="footer">
+    <p>&copy; 2024 ITS Solutions. All rights reserved.</p>
+</footer>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCinGOTnoj5-diFodU9PIZlpKW-f5mOiYM&libraries=places"></script>
+<script>
+    let map, service;
+
+    function initMap() {
+        const destination = localStorage.getItem('destination');
+        document.getElementById("destinationName").textContent = destination || "Unknown";
+
+        if (!destination) {
+            alert("Destination not set. Redirecting to the home page.");
+            window.location.href = 'landing.html';
+            return;
+        }
+
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ address: destination }, (results, status) => {
+            if (status === "OK" && results[0]) {
+                const location = results[0].geometry.location;
+
+                map = new google.maps.Map(document.getElementById("map"), {
+                    center: location,
+                    zoom: 14,
+                });
+
+                const request = {
+                    location: location,
+                    radius: 5000,
+                    type: ["tourist_attraction"]
+                };
+
+                service = new google.maps.places.PlacesService(map);
+                service.nearbySearch(request, displayTouristSpots);
+            } else {
+                console.error("Geocode failed:", status);
+                alert("Geocode was not successful for the following reason: " + status);
+            }
+        });
+    }
+
+    function displayTouristSpots(results, status) {
+        const placesList = document.getElementById("places");
+        placesList.innerHTML = "";
+
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+            results.forEach(place => {
+                const marker = new google.maps.Marker({
+                    map: map,
+                    position: place.geometry.location,
+                    title: place.name,
+                });
+
+                const placeItem = document.createElement("div");
+                placeItem.classList.add("spot-item");
+
+                placeItem.innerHTML = `
+                    <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <h3>${place.name}</h3>
+                    <p>${place.vicinity || ""}</p>
+                `;
+                placesList.appendChild(placeItem);
+            });
+        } else {
+            console.error("Nearby search failed:", status);
+            placesList.innerHTML = "<p>No tourist spots found nearby.</p>";
+        }
+    }
+
+    window.onload = initMap;
+</script>
+
+</body>
+</html>

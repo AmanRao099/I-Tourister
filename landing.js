@@ -1,88 +1,110 @@
 let map;
 let marker;
 let autocomplete;
+let service;
+let infowindow;
+let markers = [];  // Array to hold markers
 
 function initMap() {
-    // Create a map centered on a default location (e.g., New York City)
-    map = new google.maps.Map(document.getElementById('map-container'), {
-        center: { lat: 40.7128, lng: -74.0060 }, // Default to New York City
-        zoom: 12
+    // Initialize the map
+    map = new google.maps.Map(document.getElementById("map-container"), {
+        center: { lat: 37.7749, lng: -122.4194 }, // Default location (San Francisco)
+        zoom: 13,
     });
+    
+    // Initialize the Places Service
+    service = new google.maps.places.PlacesService(map);
+    infowindow = new google.maps.InfoWindow();
 
-    // Create an autocomplete input for location search
-    autocomplete = new google.maps.places.Autocomplete(document.getElementById('location-input'));
-    autocomplete.setFields(['address_component', 'geometry']); // Restrict results to necessary fields
+    // Initialize Autocomplete on the location input field
+    const input = document.getElementById("location-input");
+    const autocomplete = new google.maps.places.Autocomplete(input);
 
-    // Add listener to handle place selection
-    autocomplete.addListener('place_changed', function () {
+    // When a place is selected from the autocomplete, update the map center
+    autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace();
-        if (place.geometry) {
-            const lat = place.geometry.location.lat();
-            const lng = place.geometry.location.lng();
-            map.setCenter({ lat: lat, lng: lng });
-            marker = new google.maps.Marker({
-                position: place.geometry.location,
-                map: map
-            });
+        if (place.geometry && place.geometry.location) {
+            map.setCenter(place.geometry.location);
+        } else {
+            alert("Please select a valid location from the list.");
         }
     });
 }
 
-function getRecommendations() {
-    const location = document.getElementById('location-input').value;
 
-    if (location === "") {
-        alert("Please enter a valid location.");
+// Main function to get recommendations based on user preferences
+function getRecommendations() {
+    const locationInput = document.getElementById('location-input').value;
+    const placeType = document.getElementById('place-type').value;
+    const preference = document.getElementById('preference').value;
+
+    if (!locationInput) {
+        alert('Please enter a location.');
         return;
     }
 
-    // Show the map and make a request to Google Places API for tourist spots
-    document.getElementById('map-section').style.display = "block";
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: locationInput }, (results, status) => {
+        if (status === 'OK') {
+            const location = results[0].geometry.location;
+            map.setCenter(location);
 
-    // Use the Google Places API to search for tourist spots in the entered location
-    const request = {
-        query: location + " tourist attractions",
-        fields: ['name', 'geometry', 'place_id']
-    };
+            // Map preferences to valid Google Places types
+            const preferenceTypes = {
+                fun: ['amusement_park', 'theatre'],
+                adventure: ['park', 'view point'],
+                religious: ['church','temple'],
+                historic: 'museum'
+            };
 
-    const service = new google.maps.places.PlacesService(map);
-    service.findPlaceFromQuery(request, function (results, status) {
-        if (status === google.maps.places.PlacesServiceStatus.OK) {
-            // Clear existing markers
-            clearMarkers();
+            // Use selected placeType if no preference is specified, else use preference type
+            const selectedType = preferenceTypes[preference] || placeType;
 
-            // Loop through the results and place a marker on the map
-            results.forEach(function (place) {
-                const marker = new google.maps.Marker({
-                    position: place.geometry.location,
-                    map: map,
-                    title: place.name
-                });
+            const request = {
+                location: location,
+                radius: 5000,
+                type: [selectedType]  // Use the selected type based on preference or placeType
+            };
 
-                const infowindow = new google.maps.InfoWindow();
-                marker.addListener('click', function () {
-                    infowindow.setContent(place.name);
-                    infowindow.open(map, marker);
-                });
+            service.nearbySearch(request, (places, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    document.getElementById('map-section').style.display = 'block';
+
+                    // Clear existing markers before adding new ones
+                    clearMarkers();
+
+                    places.forEach((place) => {
+                        const marker = new google.maps.Marker({
+                            map: map,
+                            position: place.geometry.location,
+                            title: place.name
+                        });
+                        markers.push(marker);
+
+                        google.maps.event.addListener(marker, 'click', () => {
+                            infowindow.setContent(`<strong>${place.name}</strong><br>${place.vicinity}`);
+                            infowindow.open(map, marker);
+                        });
+                    });
+
+                    // Adjust the map bounds to fit the results
+                    const bounds = new google.maps.LatLngBounds();
+                    places.forEach((place) => {
+                        bounds.extend(place.geometry.location);
+                    });
+                    map.fitBounds(bounds);
+                } else {
+                    alert('No places found for the selected preference.');
+                }
             });
-
-            // Adjust the map bounds to fit the results
-            const bounds = new google.maps.LatLngBounds();
-            results.forEach(function (place) {
-                bounds.extend(place.geometry.location);
-            });
-            map.fitBounds(bounds);
         } else {
-            alert("No tourist spots found for the given location.");
+            alert('Geocode was unsuccessful for the following reason: ' + status);
         }
     });
 }
 
 // Function to clear existing markers on the map
 function clearMarkers() {
-    const markers = map.markers || [];
-    markers.forEach(function (marker) {
-        marker.setMap(null);
-    });
-    map.markers = [];
+    markers.forEach(marker => marker.setMap(null));  // Remove each marker from the map
+    markers = [];  // Reset the markers array
 }
